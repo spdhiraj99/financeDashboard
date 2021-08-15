@@ -22,7 +22,7 @@ public class ApiCallService {
 	
 	public MfApiResponse getNavFromMfApi(Long id) {
 		MfApiResponse res = null;
-		String url = "https://api.mfapi.in/mf/" ;
+		String url = "https://api.mfapi.in/mf/" + id ;
 		try {
 			log.info("Sending Request to api.mfapi.in");
 			res = restTemplate.getForObject(url, MfApiResponse.class);
