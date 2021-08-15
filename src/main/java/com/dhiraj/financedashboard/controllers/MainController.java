@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.dhiraj.financedashboard.models.MutualFund;
+import com.dhiraj.financedashboard.models.MutualFundExtended;
 import com.dhiraj.financedashboard.models.MutualFundRequest;
 import com.dhiraj.financedashboard.services.MutualFundService;
 import com.dhiraj.financedashboard.utils.FinUtility;
@@ -41,6 +42,16 @@ public class MainController {
 	@GetMapping("/info")
 	public List<MutualFund> info() {
 		return mutualFundService.listMutualFunds();
+	}
+
+	/**
+	 * get consolidated detailed list
+	 * 
+	 * @return
+	 */
+	@GetMapping("/details")
+	public List<MutualFundExtended> details() {
+		return mutualFundService.detailedMfList();
 	}
 
 	/**

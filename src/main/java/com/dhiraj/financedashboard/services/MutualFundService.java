@@ -1,6 +1,10 @@
 package com.dhiraj.financedashboard.services;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -9,9 +13,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.dhiraj.financedashboard.constants.FinConstants;
 import com.dhiraj.financedashboard.models.Data;
 import com.dhiraj.financedashboard.models.MfApiResponse;
 import com.dhiraj.financedashboard.models.MutualFund;
+import com.dhiraj.financedashboard.models.MutualFundExtended;
+import com.dhiraj.financedashboard.models.MutualFundExtended.MutualFundExtendedBuilder;
 import com.dhiraj.financedashboard.models.MutualFundRequest;
 import com.dhiraj.financedashboard.repository.MFRepository;
 import com.dhiraj.financedashboard.utils.FinUtility;
@@ -43,6 +50,81 @@ public class MutualFundService {
 			updateNav(mf);
 		}
 		return mfRecords;
+	}
+
+	/**
+	 * consolidate same fundIds and provide detailed list
+	 * 
+	 * @return
+	 */
+	public List<MutualFundExtended> detailedMfList() {
+		HashMap<Long, MutualFundExtended> mfEList = new HashMap<Long, MutualFundExtended>();
+		List<MutualFund> mfRecords = new ArrayList<>();
+		mfRepo.findAll().forEach(mfRecords::add);
+		for (MutualFund mf : mfRecords) {
+			if (mfEList.containsKey(mf.getFundId())) {
+				MutualFundExtended mfe = mfEList.get(mf.getFundId());
+				Double currentAmt = Double.parseDouble(mf.getUnits()) * mfe.getCurrentNav();
+				mfe.setCurrentAmt(String.format("%.02f", Double.parseDouble(mfe.getCurrentAmt()) + currentAmt));
+				Double profit = currentAmt - Double.parseDouble(mf.getInvestedAmt());
+				DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+				LocalDate purchaseDate = LocalDate.parse(mf.getPurchaseDate(), formatter);
+				LocalDate now = LocalDate.now();
+				Long days = ChronoUnit.DAYS.between(purchaseDate, now);
+				Double STCG = Double.valueOf(0);
+				Double LTCG = Double.valueOf(0);
+				Double withdrawNoTax = Double.valueOf(0);
+				log.info("{} and {} is {}", purchaseDate, now, days);
+				if (days < FinConstants.YEAR_IN_DAYS) {
+					STCG = profit * FinConstants.STCG_RATE;
+				} else {
+					if (profit > FinConstants.LTCG_EXCEPTION_LIMIT) {
+						withdrawNoTax += FinConstants.LTCG_EXCEPTION_LIMIT;
+						LTCG = (profit - FinConstants.LTCG_EXCEPTION_LIMIT) * FinConstants.LTCG_RATE;
+					} else {
+						withdrawNoTax += profit;
+					}
+				}
+
+				mfe.setInvestedAmt(String.format("%.02f",(Double.parseDouble(mfe.getInvestedAmt()) + Double.parseDouble(mf.getInvestedAmt()))));
+				mfe.setUnits(String.format("%.02f", Double.parseDouble(mfe.getUnits()) + Double.parseDouble(mf.getUnits())));
+				mfe.setProfit(mfe.getProfit() + profit);
+				mfe.setSTCG(mfe.getSTCG() + STCG);
+				mfe.setLTCG(mfe.getLTCG() + LTCG);
+				mfe.setWithdrawNoTax(mfe.getWithdrawNoTax() + withdrawNoTax);
+
+			} else {
+				Double currentNavForMf = Double.parseDouble(currentNavForId(mf.getFundId()));
+				MutualFundExtendedBuilder mfeBuilder = MutualFundExtended.builder();
+				mfeBuilder.id(mf.getId()).name(mf.getName()).exitLoad(mf.getExitLoad()).lockPeriod(mf.getLockPeriod())
+						.investedAmt(mf.getInvestedAmt()).units(mf.getUnits()).fundId(mf.getFundId())
+						.currentNav(currentNavForMf);
+				Double currentAmt = Double.parseDouble(mf.getUnits()) * currentNavForMf;
+				mfeBuilder.currentAmt(String.format("%.02f", currentAmt));
+				Double profit = currentAmt - Double.parseDouble(mf.getInvestedAmt());
+				DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+				LocalDate purchaseDate = LocalDate.parse(mf.getPurchaseDate(), formatter);
+				LocalDate now = LocalDate.now();
+				Long days = ChronoUnit.DAYS.between(purchaseDate, now);
+				Double STCG = Double.valueOf(0);
+				Double LTCG = Double.valueOf(0);
+				Double withdrawNoTax = Double.valueOf(0);
+				log.info("{} and {} is {}", purchaseDate, now, days);
+				if (days < FinConstants.YEAR_IN_DAYS) {
+					STCG = profit * FinConstants.STCG_RATE;
+				} else {
+					if (profit > FinConstants.LTCG_EXCEPTION_LIMIT) {
+						withdrawNoTax += FinConstants.LTCG_EXCEPTION_LIMIT;
+						LTCG = (profit - FinConstants.LTCG_EXCEPTION_LIMIT) * FinConstants.LTCG_RATE;
+					} else {
+						withdrawNoTax += profit;
+					}
+				}
+				mfeBuilder.profit(profit).STCG(STCG).LTCG(LTCG).withdrawNoTax(withdrawNoTax);
+				mfEList.put(mf.getFundId(), mfeBuilder.build());
+			}
+		}
+		return new ArrayList<MutualFundExtended>(mfEList.values());
 	}
 
 	/**
