@@ -53,7 +53,7 @@ public class MutualFundService {
 	 */
 	public boolean deleteMutualFund(String recId) {
 		try {
-			Optional<MutualFund> opMf = mfRepo.findById(recId);
+			Optional<MutualFund> opMf = mfRepo.findById(Long.parseLong(recId));
 			if (opMf.isPresent()) {
 				MutualFund mf = opMf.get();
 				mfRepo.delete(mf);
@@ -62,6 +62,7 @@ public class MutualFundService {
 			}
 		} catch (Exception e) {
 			log.error("Exception occured while trying to delete MF Record");
+			e.printStackTrace();
 			return false;
 		}
 		log.info("Record not found");

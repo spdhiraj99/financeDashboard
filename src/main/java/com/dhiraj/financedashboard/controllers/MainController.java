@@ -4,6 +4,7 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -49,12 +50,12 @@ public class MainController {
 	 * @return
 	 */
 	@PostMapping("/add")
-	public HttpStatus addMf(@RequestBody MutualFundRequest mfr) {
+	public ResponseEntity addMf(@RequestBody MutualFundRequest mfr) {
 		log.info("Incoming Json: {} ", FinUtility.getJson(mfr));
 		if (mutualFundService.addMutualFund(mfr)) {
-			return HttpStatus.OK;
+			return ResponseEntity.status(HttpStatus.OK).build();
 		}
-		return HttpStatus.INTERNAL_SERVER_ERROR;
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 	}
 
 	/**
@@ -64,11 +65,12 @@ public class MainController {
 	 * @return
 	 */
 	@GetMapping("/delete/{id}")
-	public HttpStatus deleteMf(@PathVariable String id) {
+	public ResponseEntity deleteMf(@PathVariable String id) {
 		if (mutualFundService.deleteMutualFund(id)) {
-			return HttpStatus.OK;
+			return ResponseEntity.status(HttpStatus.OK).build();
 		}
-		return HttpStatus.INTERNAL_SERVER_ERROR;
+		log.info("returning error");
+		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
 	}
 
 	/**
