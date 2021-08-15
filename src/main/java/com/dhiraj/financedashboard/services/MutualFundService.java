@@ -92,6 +92,8 @@ public class MutualFundService {
 				mfe.setSTCG(mfe.getSTCG() + STCG);
 				mfe.setLTCG(mfe.getLTCG() + LTCG);
 				mfe.setWithdrawNoTax(mfe.getWithdrawNoTax() + withdrawNoTax);
+				Double withdrawTax = (profit-withdrawNoTax-STCG-LTCG)  + Double.parseDouble(mf.getInvestedAmt());
+				mfe.setWithdrawTax(mfe.getWithdrawTax() + withdrawTax);
 
 			} else {
 				Double currentNavForMf = Double.parseDouble(currentNavForId(mf.getFundId()));
@@ -120,7 +122,8 @@ public class MutualFundService {
 						withdrawNoTax += profit;
 					}
 				}
-				mfeBuilder.profit(profit).STCG(STCG).LTCG(LTCG).withdrawNoTax(withdrawNoTax);
+				Double withdrawTax = (profit-withdrawNoTax-STCG-LTCG)  + Double.parseDouble(mf.getInvestedAmt());
+				mfeBuilder.profit(profit).STCG(STCG).LTCG(LTCG).withdrawNoTax(withdrawNoTax).withdrawTax(withdrawTax);
 				mfEList.put(mf.getFundId(), mfeBuilder.build());
 			}
 		}
